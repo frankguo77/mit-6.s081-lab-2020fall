@@ -2,13 +2,14 @@
 #include "kernel/stat.h" 
 #include "user/user.h"
 
-void primes() {
+void primes(int* pf) {
 
     int val;
     int p[2];
 
+    close(pf[1]);
     pipe(p);
-    if (read(0, &val, sizeof(val)) <= 0) {
+    if (read(pf[0], &val, sizeof(val)) <= 0) {
         return;
     }
 
@@ -16,23 +17,23 @@ void primes() {
 
     int pid = fork();
     if (pid == 0){
-        close(0);
-        dup(p[0]);
-        close(p[0]);
-        close(p[1]);
-        primes();
+        //close(0);
+        //dup(p[0]);
+        //close(p[0]);
+        //close(p[1]);
+        primes(p);
     }else{
         int tmpval;
-        close(1);
-        dup(p[1]);
+        //close(1);
+        //dup(p[1]);
         close(p[0]);
-        close(p[1]);    
-        while (read(0, &tmpval, sizeof(tmpval)) > 0){
+        //close(p[1]);    
+        while (read(pf[0], &tmpval, sizeof(tmpval)) > 0){
             if (tmpval % val != 0) {
-                write(1, &tmpval, sizeof(tmpval));
+                write(p[1], &tmpval, sizeof(tmpval));
             }
         }
-        close(1);
+        close(p[1]);
         wait(&pid);
     }
 }
@@ -45,21 +46,22 @@ main(int argc, char *argv[])
   pipe(p);
   int pid = fork();
   if (pid == 0){
-      close(0);
-      dup(p[0]);
-      close(p[0]);
-      close(p[1]);
-      primes();
+      //close(0);
+      //dup(p[0]);
+      //close(p[0]);
+      //close(p[1]);
+      primes(p);
   }else{
-      close(1);
-      dup(p[1]);
+      //close(1);
+      //dup(p[1]);
       close(p[0]);
-      close(p[1]);
+      //close(p[1]);
       for (int i = 2; i <= 35; i++) {
-          write(1, &i, sizeof(i));
+          write(p[1], &i, sizeof(i));
       }
-      close(1);
+      close(p[1]);
+      wait(&pid);
   }
-  wait(&pid);
+  
   exit(0);
 }
