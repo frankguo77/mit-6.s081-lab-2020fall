@@ -6,6 +6,7 @@ void primes() {
 
     int val;
     int p[2];
+    int tmpval;
 
     pipe(p);
     if (read(0, &val, sizeof(val)) <= 0) {
@@ -22,7 +23,6 @@ void primes() {
         close(p[1]);
         primes();
     }else{
-        int tmpval;
         close(1);
         dup(p[1]);
         close(p[0]);
@@ -33,7 +33,7 @@ void primes() {
             }
         }
         close(1);
-        wait();
+        wait(&pid);
     }
 }
 
