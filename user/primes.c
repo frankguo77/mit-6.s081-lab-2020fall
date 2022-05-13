@@ -8,14 +8,14 @@ void primes() {
     int p[2];
 
     pipe(p);
-    
     if (read(0, &val, sizeof(val)) <= 0) {
         return;
     }
 
     fprintf(1, "prime %d\n", val);
 
-    if (fork() == 0){
+    int pid = fork();
+    if (pid == 0){
         close(0);
         dup(p[0]);
         close(p[0]);
@@ -41,10 +41,10 @@ int
 main(int argc, char *argv[])
 {
   int p[2];
-  int value;
     
   pipe(p);
-  if (fork() == 0){
+  int pid = fork();
+  if (pid == 0){
       close(0);
       dup(p[0]);
       close(p[0]);
@@ -60,6 +60,6 @@ main(int argc, char *argv[])
       }
       close(1);
   }
-  wait();
+  wait(&pid);
   exit(0);
 }
