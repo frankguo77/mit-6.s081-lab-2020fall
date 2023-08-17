@@ -1,7 +1,7 @@
 # mit-6.s081-lab-2020fall
 The lab code of MIT 6.S081
 ## Environment setup
-https://zhuanlan.zhihu.com/p/504164986
+https://zhuanlan.zhihu.com/p/504164986  
 **Ubuntu**
 ```shell
 sudo apt-get install git build-essential gdb-multiarch qemu-system-misc gcc-riscv64-linux-gnu binutils-riscv64-linux-gnu  -y && 
@@ -47,6 +47,7 @@ make qemu
 
 ### Reference
 [6.S081 Home page](https://pdos.csail.mit.edu/6.S081/2020/)
+[6.1810 Home page](https://pdos.csail.mit.edu/6.828/2022)
 
 [Chinese](https://mit-public-courses-cn-translatio.gitbook.io/mit6-s081/)
 
