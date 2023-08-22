@@ -21,8 +21,8 @@ main(int argc, char *argv[])
 	 write(pr[1], &buf, 1);
 	 close(pr[1]);
 	 close(pw[0]);
-	 exit(0);
     }
+     exit(0);
   }else{
      close(pw[0]);
      close(pr[1]);
@@ -31,9 +31,8 @@ main(int argc, char *argv[])
 	  fprintf(1, "%d: received pong\n", getpid());
 	  close(pr[0]);
 	  close(pw[1]);
-	  exit(0);
     }
+    wait(0);
+    exit(0);
   }
-
-  exit(0);
 }
