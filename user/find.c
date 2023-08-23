@@ -1,6 +1,7 @@
 #include "kernel/types.h"
 #include "kernel/stat.h"
 #include "user/user.h"
+#include "kernel/fs.h"
 
 
 char*
@@ -18,7 +19,7 @@ fmtname(char *path)
   if(strlen(p) >= DIRSIZ)
     return p;
   memmove(buf, p, strlen(p));
-  memset(buf+strlen(p), ' ', DIRSIZ-strlen(p));
+  memset(buf+strlen(p), 0 , DIRSIZ-strlen(p));
   return buf;
 }
 
@@ -30,6 +31,7 @@ find(char *path, char *fn)
   struct dirent de;
   struct stat st;
 
+  //printf("Path: %s\n", path);
   if((fd = open(path, 0)) < 0){
     fprintf(2, "find: cannot open %s\n", path);
     return;
@@ -43,13 +45,16 @@ find(char *path, char *fn)
 
   switch(st.type){
   case T_FILE:
+   // printf("%s is a file.\n", path);
     p = fmtname(path);
+    //printf("p: %s, fn: %s\n", p, fn);
     if (strcmp(p, fn) == 0){
       printf("%s\n", path);
     }
     break;
 
   case T_DIR:
+    //printf("%s is a dir\n", path);
     if(strlen(path) + 1 + DIRSIZ + 1 > sizeof buf){
       printf("find: path too long\n");
       break;
@@ -70,7 +75,8 @@ find(char *path, char *fn)
       //   printf("find: cannot stat %s\n", buf);
       //   continue;
       // }
-      find(p, fn)
+      //printf("next path: %s\n", p);
+      find(buf, fn);
     }
 
     break;
@@ -85,6 +91,7 @@ main(int argc, char *argv[])
     fprintf(2, "Please enter path and filename!\n");
     exit(1);
     } else {
+      find(argv[1], argv[2]);
       exit(0);
     }
 }
