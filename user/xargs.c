@@ -5,7 +5,7 @@
 #define MAXARGS 10
 
 
-int runcmd(char* argv[]) {
+void runcmd(char* argv[]) {
   int pid = fork();
   if (pid == 0){
     exec(argv[0], argv);
