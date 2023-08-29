@@ -97,17 +97,6 @@ sys_uptime(void)
 }
 
 uint64
-sys_uptime(void)
-{
-  uint xticks;
-
-  acquire(&tickslock);
-  xticks = ticks;
-  release(&tickslock);
-  return xticks;
-}
-
-uint64
 sys_trace(void)
 {
   int mask;
