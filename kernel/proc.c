@@ -21,6 +21,8 @@ static void freeproc(struct proc *p);
 
 extern char trampoline[]; // trampoline.S
 
+extern pagetable_t kernel_pagetable;
+
 // initialize the proc table at boot time.
 void
 procinit(void)
@@ -120,6 +122,8 @@ found:
     release(&p->lock);
     return 0;
   }
+
+  p->kpagetable = kernel_pagetable;
 
   // Set up new context to start executing at forkret,
   // which returns to user space.
