@@ -58,7 +58,7 @@ void
 kvminit()
 {
   kernel_pagetable = (pagetable_t) kalloc();
-  vmint(kernel_pagetable);
+  vminit(kernel_pagetable);
 }
 
 void
@@ -136,12 +136,12 @@ walkaddr(pagetable_t pagetable, uint64 va)
 // add a mapping to the kernel page table.
 // only used when booting.
 // does not flush TLB or enable paging.
-void
-kvmmap(uint64 va, uint64 pa, uint64 sz, int perm)
-{
-  if(mappages(kernel_pagetable, va, sz, pa, perm) != 0)
-    panic("kvmmap");
-}
+// void
+// kvmmap(uint64 va, uint64 pa, uint64 sz, int perm)
+// {
+//   if(mappages(kernel_pagetable, va, sz, pa, perm) != 0)
+//     panic("kvmmap");
+// }
 
 // translate a kernel virtual address to
 // a physical address. only needed for

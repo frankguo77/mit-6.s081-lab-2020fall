@@ -224,14 +224,6 @@ proc_freepagetable(pagetable_t pagetable, uint64 sz)
   uvmfree(pagetable, sz);
 }
 
-// Free a process's kernel page table, and free the
-// physical memory it refers to.
-void
-proc_freekpagetable(p)
-{
-  uvmfree(p->kpagetable, sz);
-}
-
 // a user program that calls exec("/init")
 // od -t xC initcode
 uchar initcode[] = {
