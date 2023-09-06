@@ -527,6 +527,6 @@ void kvmmapuser(pagetable_t pt,pagetable_t kpt, uint64 va, uint64 sz) {
     *kpte &= ~(PTE_U|PTE_W|PTE_X);
 
     va += PGSIZE;
-    sz += PGSIZE;
+    sz -= PGSIZE;
   }
 }
