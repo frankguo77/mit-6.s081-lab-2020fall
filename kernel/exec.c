@@ -120,6 +120,8 @@ exec(char *path, char **argv)
     vmprint(p->pagetable);
   }
 
+   kvmmapuser(p->pagetable, p->kpagetable,0, p->sz);
+
   return argc; // this ends up in a0, the first argument to main(argc, argv)
 
  bad:

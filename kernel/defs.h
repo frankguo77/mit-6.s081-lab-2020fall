@@ -183,6 +183,7 @@ void            vmprint(pagetable_t pagetable);
 void            vminit(pagetable_t pagetable);
 void            vminithart(pagetable_t pagetable);
 void            kfreewalk(pagetable_t pagetable);
+void            kvmmapuser(pagetable_t pt,pagetable_t kpt, uint64 va, uint64 sz);
 
 
 // plic.c

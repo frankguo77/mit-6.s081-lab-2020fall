@@ -136,7 +136,7 @@ found:
   char *pa = kalloc();
   if(pa == 0)
     panic("kalloc");
-  uint64 va = KSTACK((int) (p - proc));
+  uint64 va = KSTACK(0);
   vmmap(p->kpagetable, va, (uint64)pa, PGSIZE, PTE_R | PTE_W);
   p->kstack = va;
 
@@ -279,6 +279,7 @@ growproc(int n)
     sz = uvmdealloc(p->pagetable, sz, sz + n);
   }
   p->sz = sz;
+  kvmmapuser(p->pagetable, p->kpagetable, 0, p->sz);
   return 0;
 }
 
@@ -321,6 +322,8 @@ fork(void)
   safestrcpy(np->name, p->name, sizeof(p->name));
 
   pid = np->pid;
+
+  kvmmapuser(np->pagetable, np->kpagetable,0, np->sz);
 
   np->state = RUNNABLE;
 
