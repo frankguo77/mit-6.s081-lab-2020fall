@@ -515,7 +515,7 @@ vmprint(pagetable_t pagetable) {
 void kvmmapuser(pagetable_t pt,pagetable_t kpt, uint64 va, uint64 sz) {
   pte_t *upte, *kpte;
 
-  if (va + sz >= PLIT) {
+  if (va + sz >= PLIC){
     panic("kvmmapuser: new va too big");
   }
 
