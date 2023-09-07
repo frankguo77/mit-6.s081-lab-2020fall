@@ -542,7 +542,13 @@ void kvmmapuser(pagetable_t pt,pagetable_t kpt, uint64 newsz, uint64 oldsz) {
 
   for (va = oldsz; va < newsz; va += PGSIZE) {
     upte = walk(pt, va, 0);
+    if (upte == 0) {
+      panic("kvmmapuser: upte zero");
+    }
     kpte = walk(kpt, va, 1);
+    if (kpte == 0) {
+      panic("kvmmapuser: upte zero");
+    }    
 
     *kpte = *upte;
     *kpte &= ~(PTE_U|PTE_W|PTE_X);

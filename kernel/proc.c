@@ -284,7 +284,7 @@ growproc(int n)
   // printf("growproc: %d\n", n);
   //uvmunmap(p->kpagetable,PGROUNDUP(0),(PGROUNDUP(p->sz)) / PGSIZE,0);
   //vmprint(p->kpagetable);;
-  kvmmapuser(p->pagetable, p->kpagetable, sz, p->sz);
+  kvmmapuser(p->pagetable, p->kpagetable, sz, 0);
   //printf("here\n");
   p->sz = sz;
   return 0;
