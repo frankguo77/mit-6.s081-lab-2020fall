@@ -136,7 +136,7 @@ found:
   char *pa = kalloc();
   if(pa == 0)
     panic("kalloc");
-  uint64 va = KSTACK(0);
+  uint64 va = KSTACK((int) (p - proc));
   vmmap(p->kpagetable, va, (uint64)pa, PGSIZE, PTE_R | PTE_W);
   p->kstack = va;
 
@@ -258,6 +258,7 @@ userinit(void)
   p->cwd = namei("/");
 
   p->state = RUNNABLE;
+  kvmmapuser(p->pagetable, p->kpagetable, p->sz, 0);
 
   release(&p->lock);
 }
@@ -272,14 +273,20 @@ growproc(int n)
 
   sz = p->sz;
   if(n > 0){
-    if((sz = uvmalloc(p->pagetable, sz, sz + n)) == 0) {
+    if(sz + n > PLIC ||(sz = uvmalloc(p->pagetable, sz, sz + n)) == 0) {
       return -1;
     }
   } else if(n < 0){
     sz = uvmdealloc(p->pagetable, sz, sz + n);
   }
+  //printf("proc pt:\n");
+  //vmprint(p->pagetable);
+  // printf("growproc: %d\n", n);
+  //uvmunmap(p->kpagetable,PGROUNDUP(0),(PGROUNDUP(p->sz)) / PGSIZE,0);
+  //vmprint(p->kpagetable);;
+  kvmmapuser(p->pagetable, p->kpagetable, sz, p->sz);
+  //printf("here\n");
   p->sz = sz;
-  kvmmapuser(p->pagetable, p->kpagetable, 0, p->sz);
   return 0;
 }
 
@@ -323,7 +330,7 @@ fork(void)
 
   pid = np->pid;
 
-  kvmmapuser(np->pagetable, np->kpagetable,0, np->sz);
+  kvmmapuser(np->pagetable, np->kpagetable, np->sz, 0);
 
   np->state = RUNNABLE;
 

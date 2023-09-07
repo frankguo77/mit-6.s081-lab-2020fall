@@ -512,21 +512,39 @@ vmprint(pagetable_t pagetable) {
   printpte(pagetable, 1);
 }
 
-void kvmmapuser(pagetable_t pt,pagetable_t kpt, uint64 va, uint64 sz) {
+void kvmmapuser_test(pagetable_t pt,pagetable_t kpt, uint64 sz, uint64 va) {
   pte_t *upte, *kpte;
+  uint64 copiedsz = 0;
+  
+  if (va + sz >= PLIC) {
+	panic("kvmmapuser: new va too big");
+   }
 
-  if (va + sz >= PLIC){
+   
+   while (copiedsz < sz) {
+	upte = walk(pt, va, 0);
+	kpte = walk(kpt, va, 1);
+
+	*kpte = *upte;
+	*kpte &= ~(PTE_U|PTE_W|PTE_X);
+
+	va += PGSIZE;
+	copiedsz += PGSIZE;
+   }
+}
+void kvmmapuser(pagetable_t pt,pagetable_t kpt, uint64 newsz, uint64 oldsz) {
+  pte_t *upte, *kpte;
+  uint64 va;
+
+  if (newsz >= PLIC){
     panic("kvmmapuser: new va too big");
   }
 
-  while (sz > 0){
+  for (va = oldsz; va < newsz; va += PGSIZE) {
     upte = walk(pt, va, 0);
     kpte = walk(kpt, va, 1);
 
     *kpte = *upte;
     *kpte &= ~(PTE_U|PTE_W|PTE_X);
-
-    va += PGSIZE;
-    sz -= PGSIZE;
   }
-}
+}  
