@@ -279,13 +279,7 @@ growproc(int n)
   } else if(n < 0){
     sz = uvmdealloc(p->pagetable, sz, sz + n);
   }
-  //printf("proc pt:\n");
-  //vmprint(p->pagetable);
-  // printf("growproc: %d\n", n);
-  //uvmunmap(p->kpagetable,PGROUNDUP(0),(PGROUNDUP(p->sz)) / PGSIZE,0);
-  //vmprint(p->kpagetable);;
-  kvmmapuser(p->pagetable, p->kpagetable, sz, 0);
-  //printf("here\n");
+  kvmmapuser(p->pagetable, p->kpagetable, sz, p->sz);
   p->sz = sz;
   return 0;
 }
