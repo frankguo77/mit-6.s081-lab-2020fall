@@ -49,7 +49,9 @@ make qemu
 [6.S081 Home page](https://pdos.csail.mit.edu/6.S081/2020/)  
 [6.1810 Home page](https://pdos.csail.mit.edu/6.828/2022)
 
-[Chinese](https://mit-public-courses-cn-translatio.gitbook.io/mit6-s081/)
+[Chinese](https://mit-public-courses-cn-translatio.gitbook.io/mit6-s081/)  
+
+[Helpful notes](https://clownote.github.io/tags/xv6/)  
 
 [![Readme Card](https://github-readme-stats.vercel.app/api/pin/?username=huihongxiao&repo=MIT6.S081)](https://github.com/huihongxiao/MIT6.S081)
 
