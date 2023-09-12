@@ -137,10 +137,10 @@ void
 backtrace(void)
 {
   uint64 fp = r_fp();
-  printf("backtrace:\n")
+  printf("backtrace:\n");
 
   while (PGROUNDUP(fp) - PGROUNDDOWN(fp) == PGSIZE) {
-    printf("%p\n", *(fp - 8))
-    fp = *fp - 16;
+    printf("%p\n", *((uint64*)(fp - 8)));
+    fp = *((uint64*)(fp - 16));
   }
 }
