@@ -122,5 +122,6 @@ sys_sigreturn(void)
 {
   struct proc* p = myproc();
   memmove(p->trapframe, &(p->aframe), sizeof(p->aframe));
+  p->ticks = 0;
   return 0;
 }

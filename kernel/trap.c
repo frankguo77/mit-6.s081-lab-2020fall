@@ -86,7 +86,6 @@ usertrap(void)
         //call ahandler
         memmove(&p->aframe, p->trapframe, sizeof(p->aframe));
         p->trapframe->epc = p->ahandler;
-        p->ticks = 0;
       }
     }
 
