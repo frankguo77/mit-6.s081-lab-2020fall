@@ -105,8 +105,8 @@ struct proc {
   char name[16];               // Process name (debugging)
 
   // alarm signal
-  int        aticks;                 // Alarm ticks
-  int        ticks;                  // Ticks from last signal
-  uint64     ahandler;               // Alarm handler
-  uint64     upc;                    // User addr to continue  
+  int               aticks;                 // Alarm ticks
+  int               ticks;                  // Ticks from last signal
+  uint64            ahandler;               // Alarm handler
+  struct trapframe  aframe;                 // trapframe to resume
 };
