@@ -5,6 +5,8 @@
 #include "riscv.h"
 #include "defs.h"
 #include "fs.h"
+#include "spinlock.h"
+#include "proc.h"
 
 /*
  * the kernel's page table.
@@ -101,13 +103,11 @@ walkaddr(pagetable_t pagetable, uint64 va)
     return 0;
 
   pte = walk(pagetable, va, 0);
-  if(pte == 0)
-    return 0;
-  if((*pte & PTE_V) == 0)
-    return 0;
-  if((*pte & PTE_U) == 0)
-    return 0;
-  pa = PTE2PA(*pte);
+  if ((pte == 0) ||((*pte & PTE_V) == 0) || ((*pte & PTE_U) == 0)) {
+    pa = lazyalloc(myproc(), va);
+  } else {
+    pa = PTE2PA(*pte);
+  }
   return pa;
 }
 
@@ -443,4 +443,24 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
   } else {
     return -1;
   }
+}
+
+uint64 
+lazyalloc(struct proc * p, uint64 va){
+  if(va >= p->sz || va < PGROUNDUP(p->trapframe->sp)){
+    return 0;
+  }
+  char * mem;
+  uint64 a = PGROUNDDOWN(va);
+  mem = kalloc();
+  if(mem == 0){
+    return 0;
+  }
+  memset(mem, 0, PGSIZE);  
+    if(mappages(p->pagetable, a, PGSIZE, (uint64)mem, PTE_W|PTE_X|PTE_R|PTE_U) != 0){
+      kfree(mem);
+      return 0;
+    }
+
+  return (uint64)mem;
 }

@@ -67,23 +67,9 @@ usertrap(void)
     syscall();
   } else if (r_scause() == 13 || r_scause() == 15) {
     uint64 va = r_stval();
-    if (va >= p->sz || va < PGROUNDUP(p->trapframe->sp)) {
+    if (lazyalloc(p, va) == 0) {
       p->killed = 1;
-    } else {
-      //printf("usertrap(): page fault %p\n", va);
-      va = PGROUNDDOWN(va);
-      void *ka = kalloc();
-      if(ka == 0){
-        //printf("usertrap(): fail to alloc mem pid=%d\n", p->pid);
-        p->killed = 1;
-      } else {
-        memset(ka, 0, PGSIZE);
-        if(mappages(p->pagetable, va, PGSIZE, (uint64)ka, PTE_W|PTE_X|PTE_R|PTE_U) != 0) {
-          kfree(ka);
-          p->killed = 1;
-        }
-      }
-    } 
+     } 
   } else if((which_dev = devintr()) != 0){
     // ok
   } else {
