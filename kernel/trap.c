@@ -67,7 +67,7 @@ usertrap(void)
     syscall();
   } else if (r_scause() == 13 || r_scause() == 15) {
     uint64 va = r_stval();
-    if (va > p->sz) {
+    if (va >= p->sz || va < PGROUNDUP(p->trapframe->sp)) {
       p->killed = 1;
     } else {
       //printf("usertrap(): page fault %p\n", va);
