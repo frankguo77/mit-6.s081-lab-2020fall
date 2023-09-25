@@ -67,8 +67,8 @@ usertrap(void)
     syscall();
   } else if (r_scause() == 13 || r_scause() == 15) {
     uint64 va = r_stval();
-    va = PGROUNDDOWN(va);
     printf("usertrap(): page fault %p\n", va);
+    va = PGROUNDDOWN(va);
     void *ka = kalloc();
     if(ka == 0){
       printf("usertrap(): fail to alloc mem pid=%d\n", p->pid);
