@@ -53,9 +53,7 @@ sys_sbrk(void)
 //    return -1;
   if (n < 0) {
     uvmdealloc(p->pagetable, addr, p->sz);
-  } else {
-    p->sz += n;
-  }
+  } 
   return addr;
 }
 
