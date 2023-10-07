@@ -159,6 +159,7 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
     if(*pte & PTE_V)
       panic("remap");
     *pte = PA2PTE(pa) | perm | PTE_V;
+    kref((void*)pa);
     if(a == last)
       break;
     a += PGSIZE;
@@ -318,7 +319,8 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
       panic("uvmcopy: pte should exist");
     if((*pte & PTE_V) == 0)
       panic("uvmcopy: page not present");
-    *pte &= (~PTE_W);
+    *pte &= ~PTE_W;
+    *pte |= PTE_COW;
     pa = PTE2PA(*pte);
     flags = PTE_FLAGS(*pte);
     // if((mem = kalloc()) == 0)
@@ -355,13 +357,32 @@ uvmclear(pagetable_t pagetable, uint64 va)
 int
 copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
 {
-  uint64 n, va0, pa0;
+  uint64 n, va0, pa0, pa1;
+  pte_t *pte;
 
   while(len > 0){
     va0 = PGROUNDDOWN(dstva);
-    pa0 = walkaddr(pagetable, va0);
-    if(pa0 == 0)
+    // pa0 = walkaddr(pagetable, va0);
+    pte = walk(pagetable, va0, 0);
+    if(pte == 0)
       return -1;
+    if((*pte & PTE_V) == 0)
+      return -1;
+    if((*pte & PTE_U) == 0)
+      return -1;
+    
+    pa0 = PTE2PA(*pte);
+    if ((*pte & PTE_COW) != 0) {// COW page
+      pa1 = (uint64)kalloc();
+      if (pa1 == 0) {
+        return -1;
+      }
+      memmove((char*)pa1, (char*)pa0, PGSIZE);
+      pa0 = pa1;
+      *pte = PA2PTE(pa0) | PTE_FLAGS(*pte) & (~PTE_COW) | PTE_W;
+      kref((void*)pa0);
+    } 
+  
     n = PGSIZE - (dstva - va0);
     if(n > len)
       n = len;
@@ -441,4 +462,29 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
     return -1;
   }
 }
+
+int
+cowhandler(pagetable_t pagetable, pte_t *pte)
+{
+  uint64 pa = PTE2PA(*pte);
+  uint flags = PTE_FLAGS(*pte);
+  uint64 npa;
+
+  if (kgetref((void*)pa) > 1) {
+    //if only 1 ref, all need is to change pte flag
+    npa = (uint64) kalloc();
+    if (npa == 0) {
+      return -1;
+    }
+
+    memmove((char*)npa, (char*)pa, PGSIZE);
+    kunref((void*)pa);
+    *pte = PA2PTE(npa) | flags;
+  }
+
+  *pte &= ~PTE_COW;
+  *pte |= PTE_W;
+  return 1;
+}
+
 

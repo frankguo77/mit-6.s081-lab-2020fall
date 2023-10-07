@@ -74,26 +74,18 @@ usertrap(void)
     } else {
       pte_t *pte;
       uint64 cpa, ppa;
-      uint flags;
 
-      pte = walk(p->parent->pagetable, va, 0);
-      *pte &= PTE_W;
-
-      ppa = PTE2PA(*pte);
-      flags = PTE_FLAGS(*pte);
-
-      cpa = (uint64) kalloc();
-      if (cpa == 0){
-        p->killed = 1;
-      } else {
-        memmove((char*)cpa, (char*)ppa, PGSIZE);
-        va = PGROUNDDOWN(va);
-        if(mappages(p->pagetable, va, PGSIZE, cpa, flags) != 0) {
-          kfree((void *)cpa);
+      pte = walk(p->pagetable, va, 0);
+      if ((*pte & PTE_COW) != 0) {
+        if (cowhandler(p->pagetable, pte) < 0) {
           p->killed = 1;
         }
+      } else {
+        printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
+        printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
+        p->killed = 1;       
       }
-    }
+   }
   } else {
     printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
     printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
