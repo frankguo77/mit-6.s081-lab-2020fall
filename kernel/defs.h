@@ -64,7 +64,6 @@ void*           kalloc(void);
 void            kfree(void *);
 void            kinit(void);
 void            kref(void *pa);
-void            kunref(void *pa);
 int             kgetref(void *pa);
 
 // log.c

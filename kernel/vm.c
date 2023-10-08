@@ -381,7 +381,7 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
           return -1;
         }
         memmove((char*)pa1, (char*)pa0, PGSIZE);
-        kunref((void*)pa0);
+        kfree((void*)pa0);
         //kref((void*)pa1);
         pa0 = pa1;
       } 
@@ -494,7 +494,7 @@ cowhandler(pagetable_t pagetable, uint64 va)
     }
 
     memmove((char*)ka, (char*)pa, PGSIZE);
-    kunref((void*)pa);
+    kfree((void*)pa);
     *pte = PA2PTE(ka) | flags;
     //kref((void*)npa);
   }
