@@ -309,7 +309,7 @@ uvmfree(pagetable_t pagetable, uint64 sz)
 int
 uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
 {
-  pte_t *pte, *newpte;
+  pte_t *pte;
   uint64 pa, i;
   uint flags;
   // char *mem;
@@ -373,14 +373,18 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
     
     pa0 = PTE2PA(*pte);
     if ((*pte & PTE_COW) != 0) {// COW page
-      pa1 = (uint64)kalloc();
-      if (pa1 == 0) {
-        return -1;
-      }
-      memmove((char*)pa1, (char*)pa0, PGSIZE);
-      pa0 = pa1;
-      *pte = PA2PTE(pa0) | PTE_FLAGS(*pte) & (~PTE_COW) | PTE_W;
-      kref((void*)pa0);
+      if (kgetref((void*)pa0) > 1) {
+        pa1 = (uint64)kalloc();
+        if (pa1 == 0) {
+          return -1;
+        }
+        memmove((char*)pa1, (char*)pa0, PGSIZE);
+        kunref((void*)pa0);
+        kref((void*)pa1);
+        pa0 = pa1;
+      } 
+
+      *pte = (PA2PTE(pa0) | PTE_FLAGS(*pte) | PTE_W) & (~PTE_COW);
     } 
   
     n = PGSIZE - (dstva - va0);
@@ -480,6 +484,7 @@ cowhandler(pagetable_t pagetable, pte_t *pte)
     memmove((char*)npa, (char*)pa, PGSIZE);
     kunref((void*)pa);
     *pte = PA2PTE(npa) | flags;
+    kref((void*)npa);
   }
 
   *pte &= ~PTE_COW;

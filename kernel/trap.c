@@ -73,7 +73,6 @@ usertrap(void)
       p->killed = 1;
     } else {
       pte_t *pte;
-      uint64 cpa, ppa;
 
       pte = walk(p->pagetable, va, 0);
       if ((*pte & PTE_COW) != 0) {
