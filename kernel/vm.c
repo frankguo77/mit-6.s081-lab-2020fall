@@ -329,6 +329,7 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
       // kfree(mem);
       goto err;
     }
+    kref((void*)pa);
   }
   return 0;
 
@@ -361,6 +362,8 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
 
   while(len > 0){
     va0 = PGROUNDDOWN(dstva);
+    if (va0 >= MAXVA) 
+      return -1;
     // pa0 = walkaddr(pagetable, va0);
     pte = walk(pagetable, va0, 0);
     if(pte == 0)
@@ -371,7 +374,7 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
       return -1;
     
     pa0 = PTE2PA(*pte);
-    if ((*pte & PTE_COW) != 0) {// COW page
+    if (*pte & PTE_COW)  {// COW page
       if (kgetref((void*)pa0) > 1) {
         pa1 = (uint64)kalloc();
         if (pa1 == 0) {
@@ -379,7 +382,7 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
         }
         memmove((char*)pa1, (char*)pa0, PGSIZE);
         kunref((void*)pa0);
-        kref((void*)pa1);
+        //kref((void*)pa1);
         pa0 = pa1;
       } 
 
@@ -467,23 +470,33 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
 }
 
 int
-cowhandler(pagetable_t pagetable, pte_t *pte)
+cowhandler(pagetable_t pagetable, uint64 va)
 {
-  uint64 pa = PTE2PA(*pte);
-  uint flags = PTE_FLAGS(*pte);
-  uint64 npa;
+  uint64 pa, ka;
+  uint flags;
+  pte_t *pte;
 
+  if (va >= MAXVA) {
+    return -1;
+  }
+  
+  pte = walk(pagetable, va, 0);
+  if (pte == 0) return -1;
+  if ((*pte & PTE_U) == 0 || (*pte & PTE_V) == 0 || (*pte & PTE_COW) == 0)
+    return -1;
+  pa = PTE2PA(*pte);
+  flags = PTE_FLAGS(*pte);
   if (kgetref((void*)pa) > 1) {
     //if only 1 ref, all need is to change pte flag
-    npa = (uint64) kalloc();
-    if (npa == 0) {
+    ka = (uint64) kalloc();
+    if (ka == 0) {
       return -1;
     }
 
-    memmove((char*)npa, (char*)pa, PGSIZE);
+    memmove((char*)ka, (char*)pa, PGSIZE);
     kunref((void*)pa);
-    *pte = PA2PTE(npa) | flags;
-    kref((void*)npa);
+    *pte = PA2PTE(ka) | flags;
+    //kref((void*)npa);
   }
 
   *pte &= ~PTE_COW;
