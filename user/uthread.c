@@ -101,7 +101,7 @@ thread_schedule(void)
      * Invoke thread_switch to switch from t to next_thread:
      * thread_switch(??, ??);
      */
-    thread_switch(&t->context, &next_thread->context)
+    thread_switch((uint64)&t->context,(uint64)&next_thread->context);
   } else
     next_thread = 0;
 }
@@ -116,8 +116,8 @@ thread_create(void (*func)())
   }
   t->state = RUNNABLE;
   // YOUR CODE HERE
-  memset(&t->context, 0, sizeof(t>context));
-  t->context.sp = (uint64)t->stack;
+  memset(&t->context, 0, sizeof(t->context));
+  t->context.sp = (uint64)t->stack + STACK_SIZE;
   t->context.ra = (uint64)func;
 }
 
