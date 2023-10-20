@@ -4,8 +4,8 @@
 #include <assert.h>
 #include <pthread.h>
 
-static int nthread = 1;
-static int round = 0;
+volatile  int nthread = 1;
+volatile static int round = 0;
 
 struct barrier {
   pthread_mutex_t barrier_mutex;
