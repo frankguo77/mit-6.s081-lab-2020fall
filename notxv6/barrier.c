@@ -5,7 +5,8 @@
 #include <pthread.h>
 
 int nthread = 1;
-static int round = 0;
+
+volatile static int round = 0;
 
 struct barrier {
   pthread_mutex_t barrier_mutex;
@@ -24,11 +25,11 @@ barrier_init(void)
 
 static int checkround() {
   int res = 0;
-  pthread_mutex_lock(&bstate.barrier_mutex);
+  //pthread_mutex_lock(&bstate.barrier_mutex);
   if (bstate.round == round) {
     res = 1;
   }
-  pthread_mutex_unlock(&bstate.barrier_mutex);
+  //pthread_mutex_unlock(&bstate.barrier_mutex);
 
   return res;
 }
@@ -41,18 +42,22 @@ barrier()
   // Block until all threads have called barrier() and
   // then increment bstate.round.
   //
-//  while (checkround() == 0) {
-//    usleep(random() % 100);
-//  }
+  while (checkround() == 0) {
+    usleep(random() % 100);
+  }
   
   pthread_mutex_lock(&bstate.barrier_mutex);
   bstate.nthread++;
   if (bstate.nthread == nthread) {
     bstate.round++;
-    bstate.nthread = 0;
+    bstate.nthread--;
     pthread_cond_broadcast(&bstate.barrier_cond);
   } else {
     pthread_cond_wait(&bstate.barrier_cond, &bstate.barrier_mutex);
+    bstate.nthread--;
+    if (bstate.nthread == 0) {
+      round++;
+    }
   }
 
   pthread_mutex_unlock(&bstate.barrier_mutex);
