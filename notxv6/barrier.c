@@ -22,6 +22,17 @@ barrier_init(void)
   bstate.nthread = 0;
 }
 
+static int checkround() {
+  int res = 0;
+  pthread_mutex_lock(&bstate.barrier_mutex);
+  if (bstate.round == round) {
+    res = 1;
+  }
+  pthread_mutex_unlock(&bstate.barrier_mutex);
+
+  return res;
+}
+
 static void 
 barrier()
 {
@@ -30,7 +41,21 @@ barrier()
   // Block until all threads have called barrier() and
   // then increment bstate.round.
   //
+  while (checkround() == 0) {
+    usleep(random() % 100);
+  }
   
+  pthread_mutex_lock(&bstate.barrier_mutex);
+  bstate.nthread++;
+  if (bstate.nthread == nthread) {
+    pthread_cond_broadcast(&bstate.barrier_cond);
+  } else {
+    pthread_cond_wait(&bstate.barrier_cond, &bstate.barrier_mutex);
+    round++;
+    bstate.nthread = 0;
+  }
+
+  pthread_mutex_unlock(&bstate.barrier_mutex);
 }
 
 static void *
