@@ -51,8 +51,6 @@ void
 kfree(void *pa)
 {
   struct run *r;
-  int cid;
-
   
   if(((uint64)pa % PGSIZE) != 0 || (char*)pa < end || (uint64)pa >= PHYSTOP)
     panic("kfree");
@@ -63,7 +61,7 @@ kfree(void *pa)
   r = (struct run*)pa;
 
   push_off();
-  cid = cpuid();
+  int cid = cpuid();
 
   acquire(&kmem[cid].lock);
   r->next = kmem[cid].freelist;
@@ -79,10 +77,9 @@ void *
 kalloc(void)
 {
   struct run *r;
-  int id;
   
   push_off();
-  id = cpuid();
+  int id = cpuid();
 
   acquire(&kmem[id].lock);
   if (!kmem[id].freelist) {
@@ -94,7 +91,7 @@ kalloc(void)
       acquire(&kmem[i].lock);
       if (kmem[i].freelist) {
         r = kmem[i].freelist;
-        for (int j = 0; j < 100; j++) {
+        for (int j = 0; j < 99; j++) {
           if (!r) {
             break;
           }
@@ -103,9 +100,9 @@ kalloc(void)
         }
 
         if (!r) {
-          kmem[i].freelist->next = kmem[id].freelist->next;
           kmem[id].freelist = kmem[i].freelist;
-          kmem[i].freelist = r;
+          kmem[i].freelist = r->next;
+          r->next = 0;
           release(&kmem[i].lock);
           break;
         }
