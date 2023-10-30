@@ -25,7 +25,7 @@
 
 
 #define  NBUCKET 7
-#define  NBUFPERBUCKET    (NBUF / NBUCKET)
+#define  NBUFPERBUCKET    NBUF
 #define  IBUCKET(dev, bn) (dev * bn % NBUCKET)
 
 struct {
