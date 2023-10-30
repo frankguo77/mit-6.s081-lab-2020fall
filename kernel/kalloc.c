@@ -91,21 +91,20 @@ kalloc(void)
       acquire(&kmem[i].lock);
       if (kmem[i].freelist) {
         r = kmem[i].freelist;
-        for (int j = 0; j < 99; j++) {
-          if (!r) {
+        for (int j = 0; j < 256; j++) {
+          if (r->next == 0) {
             break;
           }
-
           r = r->next;
         }
 
-        if (!r) {
+        //if (r->next) {
           kmem[id].freelist = kmem[i].freelist;
           kmem[i].freelist = r->next;
           r->next = 0;
           release(&kmem[i].lock);
           break;
-        }
+        //}
       }
 
       release(&kmem[i].lock);
