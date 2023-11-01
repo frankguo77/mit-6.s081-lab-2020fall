@@ -439,27 +439,50 @@ void
 itrunc(struct inode *ip)
 {
   int i, j;
-  struct buf *bp;
-  uint *a;
+  struct buf *bp, *bp1;
+  uint *a, *a1;
 
-  for(i = 0; i < NDIRECT; i++){
+  for(i = 0; i < NDIRECT - 1; i++){
     if(ip->addrs[i]){
       bfree(ip->dev, ip->addrs[i]);
       ip->addrs[i] = 0;
     }
   }
 
-  if(ip->addrs[NDIRECT]){
-    bp = bread(ip->dev, ip->addrs[NDIRECT]);
+  if(ip->addrs[NDIRECT - 1]){
+    bp = bread(ip->dev, ip->addrs[NDIRECT - 1]);
     a = (uint*)bp->data;
     for(j = 0; j < NINDIRECT; j++){
       if(a[j])
         bfree(ip->dev, a[j]);
     }
     brelse(bp);
+    bfree(ip->dev, ip->addrs[NDIRECT - 1]);
+    ip->addrs[NDIRECT - 1] = 0;
+  }
+
+  if(ip->addrs[NDIRECT]){
+    bp = bread(ip->dev, ip->addrs[NDIRECT]);
+    a = (uint*)bp->data;
+    for(j = 0; j < NINDIRECT; j++){
+      if(a[j]) {
+        bp1 = bread(ip->dev, a[j]);
+        a1 = (uint*)bp1->data;
+        for (i = 0; i < NINDIRECT; i++){
+          if (a1[i]) {
+            bfree(ip->dev, a1[i]);
+          }
+        }
+
+        brelease(bp1);
+        bfree(ip->dev, a[j]);
+        a[j] = 0;
+      }
+    }
+    brelse(bp);
     bfree(ip->dev, ip->addrs[NDIRECT]);
     ip->addrs[NDIRECT] = 0;
-  }
+  }  
 
   ip->size = 0;
   iupdate(ip);
