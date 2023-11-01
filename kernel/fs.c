@@ -404,7 +404,7 @@ bmap(struct inode *ip, uint bn)
 
   bn -= NINDIRECT;
   if(bn < NINDIRECT * NINDIRECT) {
-    if (addr = ip->addrs[NDIRECT] == 0) {
+    if ((addr = ip->addrs[NDIRECT]) == 0) {
       ip->addrs[NDIRECT] = addr = balloc(ip->dev);
     }
 
@@ -474,7 +474,7 @@ itrunc(struct inode *ip)
           }
         }
 
-        brelease(bp1);
+        brelse(bp1);
         bfree(ip->dev, a[j]);
         a[j] = 0;
       }
