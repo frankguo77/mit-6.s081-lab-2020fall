@@ -346,6 +346,26 @@ sys_open(void)
     f->off = 0;
   }
 
+  // for (int i = 0; i < 10; i++) {
+  int i = 0;
+  while ((!(omode & O_NOFOLLOW)) && ip->type == T_SYMLINK && i < 10){
+    readi(ip, 0, (uint64)path, 0, MAXPATH);
+    iunlockput(ip);
+    if ((ip = namei(path)) == 0){
+      fileclose(f);
+      end_op();
+      return -1;
+    }
+    ilock(ip);
+  } 
+  
+  if (i == 10) {
+    fileclose(f);
+    iunlock(ip);
+    end_op();
+    return -1;  
+  }
+
   f->ip = ip;
   f->readable = !(omode & O_WRONLY);
   f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
@@ -355,39 +375,9 @@ sys_open(void)
     itrunc(ip);
   }  
   
-  for (int i = 0; i < 10; i++) {
-    if ((!(omode & O_NOFOLLOW)) && ip->type == T_SYMLINK){
-      fileread(f, (uint64)path, MAXPATH);
-      fileclose(f);
-      iunlockput(ip);
-      if ((ip = namei(path)) == 0){
-        end_op();
-        return -1;
-      }
-      ilock(ip);
-
-      if((f = filealloc()) == 0 || (fd = fdalloc(f)) < 0){
-        if(f)
-          fileclose(f);
-        iunlockput(ip);
-        end_op();
-        return -1;
-      }
-
-      f->ip = ip;
-      f->readable = !(omode & O_WRONLY);
-      f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
-    } else {
-      iunlock(ip);
-      end_op();
-      return fd;
-    }
-  }
-
-  fileclose(f);
   iunlock(ip);
   end_op();
-  return -1;   
+  return fd;   
 }
 
 uint64
@@ -544,7 +534,7 @@ sys_symlink(void)
      return -1;
   }
 
-  ilock(ip);
+  // ilock(ip);
   if((f = filealloc()) == 0 || (fd = fdalloc(f)) < 0){
     if(f)
       fileclose(f);
@@ -559,8 +549,14 @@ sys_symlink(void)
   f->readable = 1;
   f->writable = 1;
 
-  filewrite(f, (uint64)target, MAXPATH);
+// filewrite(f, (uint64)target, MAXPATH);
+  // begin_op();
+  // ilock(f->ip);
+  writei(f->ip, 0, (uint64)target, 0, MAXPATH);
+  //iunlock(f->ip);
+  //end_op();
 
+  fileclose(f);
   iunlockput(ip);
   end_op();
 
