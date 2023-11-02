@@ -484,3 +484,46 @@ sys_pipe(void)
   }
   return 0;
 }
+
+// Create the a symlink.
+uint64
+sys_symlink(void)
+{
+  char name[DIRSIZ], path[MAXPATH], target[MAXPATH];
+  struct inode *dp, *ip;
+
+  int fd, omode;
+  struct file *f;
+
+  if(argstr(0, target, MAXPATH) < 0 || argstr(1, path, MAXPATH) < 0)
+    return -1;
+
+  begin_op();
+  ip = create(path, T_FILE, 0, 0);
+  if(ip == 0){
+     end_op();
+     return -1;
+  }
+
+  ilock(ip);
+  if((f = filealloc()) == 0 || (fd = fdalloc(f)) < 0){
+    if(f)
+      fileclose(f);
+    iunlockput(ip);
+    end_op();
+    return -1;
+  }
+
+  f->type = FD_INODE;
+  f->off = 0;
+  f->ip = ip;
+  f->readable = 1;
+  f->writable = 1;
+
+  filewrite(f, (uint64)target, strlen(target));
+
+  iunlockput(ip);
+  end_op();
+
+  return 0;
+}
