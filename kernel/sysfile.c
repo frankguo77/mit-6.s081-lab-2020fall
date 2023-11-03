@@ -324,10 +324,31 @@ sys_open(void)
     return -1;
   }
 
-  if (ip->type != T_SYMLINK && (omode & O_NOFOLLOW)) {
+ // if (ip->type != T_SYMLINK && (omode & O_NOFOLLOW)) {
+ //   iunlock(ip);
+ //   end_op();
+ //   return -1;
+ //}
+
+  // for (int i = 0; i < 10; i++) {
+  int i = 0;
+  while ((!(omode & O_NOFOLLOW)) && ip->type == T_SYMLINK && i < 10){
+    readi(ip, 0, (uint64)path, 0, ip->size);
+    iunlockput(ip);
+    if ((ip = namei(path)) == 0){
+      //fileclose(f);
+      end_op();
+      return -1;
+    }
+    ilock(ip);
+    i++;
+  } 
+  
+  if (i == 10) {
+    //fileclose(f);
     iunlock(ip);
     end_op();
-    return -1;
+    return -1;  
   }
 
   if((f = filealloc()) == 0 || (fd = fdalloc(f)) < 0){
@@ -346,25 +367,6 @@ sys_open(void)
     f->off = 0;
   }
 
-  // for (int i = 0; i < 10; i++) {
-  int i = 0;
-  while ((!(omode & O_NOFOLLOW)) && ip->type == T_SYMLINK && i < 10){
-    readi(ip, 0, (uint64)path, 0, MAXPATH);
-    iunlockput(ip);
-    if ((ip = namei(path)) == 0){
-      fileclose(f);
-      end_op();
-      return -1;
-    }
-    ilock(ip);
-  } 
-  
-  if (i == 10) {
-    fileclose(f);
-    iunlock(ip);
-    end_op();
-    return -1;  
-  }
 
   f->ip = ip;
   f->readable = !(omode & O_WRONLY);
@@ -518,13 +520,13 @@ sys_pipe(void)
 uint64
 sys_symlink(void)
 {
-  char name[DIRSIZ], path[MAXPATH], target[MAXPATH];
-  struct inode *dp, *ip;
+  char path[MAXPATH], target[MAXPATH];
+  struct inode *ip;
 
-  int fd, omode;
-  struct file *f;
+  int n;
+  //struct file *f;
 
-  if(argstr(0, target, MAXPATH) < 0 || argstr(1, path, MAXPATH) < 0)
+  if((n = argstr(0, target, MAXPATH)) < 0 || argstr(1, path, MAXPATH) < 0)
     return -1;
 
   begin_op();
@@ -534,31 +536,31 @@ sys_symlink(void)
      return -1;
   }
 
-  // ilock(ip);
-  if((f = filealloc()) == 0 || (fd = fdalloc(f)) < 0){
-    if(f)
-      fileclose(f);
-    iunlockput(ip);
-    end_op();
-    return -1;
-  }
+  //ilock(ip);
+  //if ((f = filealloc()) == 0){
+  //  iunlockput(ip);
+  //  end_op();
+  //  return -1;
+  //}
 
-  f->type = FD_INODE;
-  f->off = 0;
-  f->ip = ip;
-  f->readable = 1;
-  f->writable = 1;
+  //f->type = FD_INODE;
+  //f->off = 0;
+  //f->ip = ip;
+  //f->readable = 1;
+  //f->writable = 1;
 
 // filewrite(f, (uint64)target, MAXPATH);
   // begin_op();
   // ilock(f->ip);
-  writei(f->ip, 0, (uint64)target, 0, MAXPATH);
+  writei(ip, 0, (uint64)target, 0, n);
   //iunlock(f->ip);
   //end_op();
 
-  fileclose(f);
+  //printf("1.\n");
+  //fileclose(f);
   iunlockput(ip);
   end_op();
-
+  //fileclose(f);
+  //printf("22.\n");
   return 0;
 }
