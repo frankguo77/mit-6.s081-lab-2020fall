@@ -484,3 +484,89 @@ sys_pipe(void)
   }
   return 0;
 }
+
+uint64
+sys_pipe(void)
+{
+  uint64 fdarray; // user pointer to array of two integers
+  struct file *rf, *wf;
+  int fd0, fd1;
+  struct proc *p = myproc();
+
+  if(argaddr(0, &fdarray) < 0)
+    return -1;
+  if(pipealloc(&rf, &wf) < 0)
+    return -1;
+  fd0 = -1;
+  if((fd0 = fdalloc(rf)) < 0 || (fd1 = fdalloc(wf)) < 0){
+    if(fd0 >= 0)
+      p->ofile[fd0] = 0;
+    fileclose(rf);
+    fileclose(wf);
+    return -1;
+  }
+  if(copyout(p->pagetable, fdarray, (char*)&fd0, sizeof(fd0)) < 0 ||
+     copyout(p->pagetable, fdarray+sizeof(fd0), (char *)&fd1, sizeof(fd1)) < 0){
+    p->ofile[fd0] = 0;
+    p->ofile[fd1] = 0;
+    fileclose(rf);
+    fileclose(wf);
+    return -1;
+  }
+  return 0;
+}
+
+uint64
+sys_mmap(void)
+{
+  int addr, len, prot, flags, offset;
+  struct file *f;
+  struct proc *p = myproc();
+
+  if (argint(0, &addr) < 0 ||
+      argint(1, &len) < 0 ||
+      argint(2, &prot) < 0 ||
+      argint(3, &flags) < 0 ||
+      argint(4, &offset) < 0 ||
+      argfd(5, 0, &f) < 0) {
+        return -1;
+  }
+
+  if (offset >= f->ip->size) {
+    return -1;
+  } 
+
+  struct vma* pvma = 0;
+
+  for (int i = 0; i < 16; i++){
+    if (p->vmas[i].len == 0) {
+      pvma = &p->vmas[i];
+      break;
+    }
+  }
+
+  if (pvma == 0)
+  {
+    return -1;
+  }
+
+  // f->off = offset; 
+  filedup(f);
+  
+  pvma->addr = p->sz;
+  pvma->len = len;
+  pvma->file = f; 
+  pvma->flags = flags;
+  pvma->prot = prot;
+  pvma->offset = offset;
+
+  p->sz += len;
+
+  return pvma->addr;
+}
+
+uint64
+sys_munmap(void)
+{
+  return 0;
+}

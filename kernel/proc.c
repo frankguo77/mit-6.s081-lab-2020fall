@@ -153,6 +153,9 @@ freeproc(struct proc *p)
   p->pid = 0;
   p->parent = 0;
   p->name[0] = 0;
+  for (int i = 0; i < 10; i++) {
+    p->vmas[i].len = 0;
+  }
   p->chan = 0;
   p->killed = 0;
   p->xstate = 0;
