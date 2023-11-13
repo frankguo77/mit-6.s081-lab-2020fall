@@ -536,10 +536,13 @@ sys_mmap(void)
     return -1;
   } 
 
+   if(f->writable == 0 && (prot & PROT_WRITE) != 0 && flags == MAP_SHARED)
+    return -1; 
+
   struct vma* pvma = 0;
 
-  for (int i = 0; i < 16; i++){
-    if (p->vmas[i].len == 0) {
+  for (int i = 0; i < NOVMA; i++){
+    if (p->vmas[i].used == 0) {
       pvma = &p->vmas[i];
       break;
     }
@@ -568,5 +571,53 @@ sys_mmap(void)
 uint64
 sys_munmap(void)
 {
-  return 0;
+  int va, len;
+  struct file *f;
+  struct proc *p = myproc();
+
+  if (argint(0, &va) < 0 || argint(1, &len) < 0) {
+    return -1;
+  }
+
+  if(va >= p->sz || va < PGROUNDUP(p->trapframe->sp)){
+    return -1;
+  }
+
+  struct vma *pvma = 0;
+
+  for (int i = 0; i < NOVMA; i++) {
+    if (p->vmas[i].used == 1 && 
+        va >= p->vmas[i].addr && 
+        va < p->vmas[i].addr + p->vmas[i].len) {
+          pvma = &p->vmas[i];
+          break;
+    }
+  }
+
+  if (pvma == 0) {
+    return -1;
+  }
+
+  if (va + len > pvma->addr + pvma->len) {
+    return -1;
+  }
+
+
+
+  for (int n = 0; n < len; n += PGSIZE) {
+    // writefile
+    if(pvma->flags == MAP_SHARED && (pvma->prot & PROT_WRITE) != 0) {
+      filewrite(pvma->file, va + n, PGSIZE);
+    }
+    // unmap(va)
+    uvmunmap(p->pagetable,  va + n, 1, 1);
+    //modify vma
+
+    pvma->len -= PGSIZE;
+  } 
+
+  if (pvma->len == 0) {
+    fileclose(pvma->file);
+    pvma->used = 0; 
+  }
 }

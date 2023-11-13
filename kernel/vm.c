@@ -170,9 +170,11 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
 
   for(a = va; a < va + npages*PGSIZE; a += PGSIZE){
     if((pte = walk(pagetable, a, 0)) == 0)
-      panic("uvmunmap: walk");
+      // panic("uvmunmap: walk");
+      continue;
     if((*pte & PTE_V) == 0)
-      panic("uvmunmap: not mapped");
+      // panic("uvmunmap: not mapped");
+      continue;
     if(PTE_FLAGS(*pte) == PTE_V)
       panic("uvmunmap: not a leaf");
     if(do_free){
@@ -428,4 +430,51 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
   } else {
     return -1;
   }
+}
+
+uint64 
+lazyalloc(struct proc *p, uint64 va)
+{
+  if(va >= p->sz || va < PGROUNDUP(p->trapframe->sp)){
+    return -1;
+  }
+  char *pa;
+  struct vma *pvma = 0;
+   
+  for (int i = 0; i < NOVMA; i++) {
+    if (p->vmas[i].used == 1) && (va >= p->vmas[i].addr) && (va < p->vmas[i].addr + p->vmas[i].len) {
+      pvma = &p->vmas[i];
+      break;
+    }
+  }
+
+  if (pvma == 0) {
+    return -1;
+  }
+
+  uint64 a = PGROUNDDOWN(va);
+  uint64 last = PGROUNDDOWN(va + size - 1);
+
+  for(;;){
+    pa = kalloc();
+    if(pa == 0){
+      return -1;
+    }
+    memset(pa, 0, PGSIZE);
+
+    if(mappages(p->pagetable, a, PGSIZE, (uint64)pa, pvma->prot|PTE_U) != 0){
+      kfree(pa);
+      return -1;
+    }  
+    
+    if(a == last)
+      break;
+    a += PGSIZE;
+  }
+
+  ilock(pvma->file->ip);
+  readi(pvma->file->ip, 1, pvama->addr, pvma->offset; pvma->len);
+  iunlock(pvma->file->ip);
+ 
+  return 0;
 }

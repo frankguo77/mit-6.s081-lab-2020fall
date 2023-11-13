@@ -153,8 +153,8 @@ freeproc(struct proc *p)
   p->pid = 0;
   p->parent = 0;
   p->name[0] = 0;
-  for (int i = 0; i < 10; i++) {
-    p->vmas[i].len = 0;
+  for (int i = 0; i < NOVMA; i++) {
+    p->vmas[i].used = 0;
   }
   p->chan = 0;
   p->killed = 0;
@@ -303,6 +303,13 @@ fork(void)
 
   pid = np->pid;
 
+  for (int i = 0; i < NOVMA; i++) {
+    np->vmas[i] = p->vmas[i];
+    if (np->vmas[i].used == 1) {
+      filedup(p->vmas[i].file);
+    }
+  }
+
   np->state = RUNNABLE;
 
   release(&np->lock);
@@ -354,6 +361,17 @@ exit(int status)
       fileclose(f);
       p->ofile[fd] = 0;
     }
+  }
+
+  for(int v = 0; v < NOVMA; v++){
+  if(p->vmas[v].used) {
+    if(p->vmas[v].flags == MAP_SHARED && (p->vmas[v].prot & PROT_WRITE) != 0) {
+        filewrite(p->vmas[v].file, p->vmas[v].addr, p->vmas[v].len);
+    }
+      
+    fileclose(p->vmas[v].file);
+    p->vmas[v].file = 0;
+    p->vmas[v].used = 0;
   }
 
   begin_op();

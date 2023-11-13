@@ -1,5 +1,8 @@
+#define NOVMA 16
+
 // Virtual memory area.
 struct vma {
+  int    used;
   uint64 addr;
   int    len;
   int    prot;
@@ -113,5 +116,5 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
-  struct vma vmas[16];
+  struct vma vmas[NOVMA];
 };
