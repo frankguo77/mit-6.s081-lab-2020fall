@@ -496,17 +496,19 @@ sys_mmap(void)
       argint(1, &len) < 0 ||
       argint(2, &prot) < 0 ||
       argint(3, &flags) < 0 ||
-      argint(4, &offset) < 0 ||
-      argfd(5, 0, &f) < 0) {
+      argint(5, &offset) < 0 ||
+      argfd(4, 0, &f) < 0) {
         return -1;
   }
 
-  if (offset >= f->ip->size) {
-    return -1;
-  } 
+  // if (offset >= f->ip->size) {
+  //   printf("2\n");
+  //   return -1;
+  // } 
 
-   if(f->writable == 0 && (prot & PROT_WRITE) != 0 && flags == MAP_SHARED)
+   if(f->writable == 0 && (prot & PROT_WRITE) != 0 && flags == MAP_SHARED) {
     return -1; 
+   }
 
   struct vma* pvma = 0;
 
@@ -531,6 +533,7 @@ sys_mmap(void)
   pvma->flags = flags;
   pvma->prot = prot;
   pvma->offset = offset;
+  pvma->used = 1;
 
   p->sz += len;
 
@@ -543,7 +546,7 @@ sys_munmap(void)
   int va, len;
   // struct file *f;
   struct proc *p = myproc();
-
+ 
   if (argint(0, &va) < 0 || argint(1, &len) < 0) {
     return -1;
   }
@@ -564,13 +567,13 @@ sys_munmap(void)
   }
 
   if (pvma == 0) {
+    printf("ummap 1\n");
     return -1;
   }
 
-  if (va + len > pvma->addr + pvma->len) {
-    return -1;
-  }
-
+  // if (va + len > pvma->addr + pvma->len) {
+  //   return -1;
+  // }
 
   for (int n = 0; n < len; n += PGSIZE) {
     // writefile
@@ -582,6 +585,9 @@ sys_munmap(void)
     //modify vma
 
     pvma->len -= PGSIZE;
+    if (pvma->addr == va + n) {
+      pvma->addr += PGSIZE;
+    }
   } 
 
   if (pvma->len == 0) {

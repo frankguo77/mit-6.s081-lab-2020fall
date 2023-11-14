@@ -2,6 +2,7 @@
 #include "param.h"
 #include "memlayout.h"
 #include "riscv.h"
+#include "fcntl.h"
 #include "spinlock.h"
 #include "sleeplock.h"
 #include  "fs.h"
@@ -23,6 +24,7 @@ uint64
 lazyalloc(struct proc *p, uint64 va)
 {
   if(va >= p->sz || va < PGROUNDUP(p->trapframe->sp)){
+    // printf("lazyalloc 1\n");
     return -1;
   }
   char *pa;
@@ -39,30 +41,51 @@ lazyalloc(struct proc *p, uint64 va)
     return -1;
   }
 
-  uint64 a = PGROUNDDOWN(pvma->addr);
-  uint64 last = PGROUNDDOWN(pvma->addr + pvma->len - 1);
-
-  for(;;){
+  // uint64 a = pvma->addr;
+  // uint64 last = pvma->addr + pvma->len - 1;
+  int pte_flags = PTE_U;
+  if(pvma->prot & PROT_READ) pte_flags |= PTE_R;
+  if(pvma->prot & PROT_WRITE) pte_flags |= PTE_W;
+  if(pvma->prot & PROT_EXEC) pte_flags |= PTE_X; 
+  
+  for(int n = 0 ; n <  pvma->len; n += PGSIZE){
     pa = kalloc();
     if(pa == 0){
       return -1;
     }
+
     memset(pa, 0, PGSIZE);
 
-    if(mappages(p->pagetable, a, PGSIZE, (uint64)pa, pvma->prot|PTE_U) != 0){
+    // printf("file size: %x\n", pvma->file->ip->size);
+    // if (pvma->offset + n < pvma->file->ip->size) {  
+    //   ilock(pvma->file->ip);
+    //   if (readi(pvma->file->ip, 0, (uint64)pa, pvma->offset + n, PGSIZE) == 0) {
+    //     printf("read fail \n");
+    //     iunlock(pvma->file->ip);
+    //     kfree(pa);
+    //     return -1;
+    //   }
+
+    //   iunlock(pvma->file->ip);
+    // }
+
+    // printf("pa[0] = %d, pa[-1] = %d\n", pa[0], pa[PGSIZE - 1]);
+
+    // printf("lazyalloc va = %x\n", pvma->addr + n);    
+    if(mappages(p->pagetable, pvma->addr + n, PGSIZE, (uint64)pa, pte_flags) != 0){
       kfree(pa);
       return -1;
     }  
     
-    if(a == last)
-      break;
-    a += PGSIZE;
+    // if(a == last)
+    //   break;
+    // a += PGSIZE;
   }
 
   ilock(pvma->file->ip);
   readi(pvma->file->ip, 1, pvma->addr, pvma->offset, pvma->len);
   iunlock(pvma->file->ip);
- 
+  // printf("lazyalloc ok\n");
   return 0;
 }
 
@@ -117,7 +140,7 @@ usertrap(void)
     syscall();
   } else if (r_scause() == 13 || r_scause() == 15) {
     uint64 va = r_stval();
-    if (lazyalloc(p, va) == 0) {
+    if (lazyalloc(p, va) == -1) {
       p->killed = 1;
     } 
   } else if((which_dev = devintr()) != 0){
