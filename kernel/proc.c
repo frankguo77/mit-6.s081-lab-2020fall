@@ -2,6 +2,7 @@
 #include "param.h"
 #include "memlayout.h"
 #include "riscv.h"
+#include "fcntl.h"
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
@@ -364,14 +365,15 @@ exit(int status)
   }
 
   for(int v = 0; v < NOVMA; v++){
-  if(p->vmas[v].used) {
-    if(p->vmas[v].flags == MAP_SHARED && (p->vmas[v].prot & PROT_WRITE) != 0) {
-        filewrite(p->vmas[v].file, p->vmas[v].addr, p->vmas[v].len);
-    }
+    if(p->vmas[v].used) {
+      if(p->vmas[v].flags == MAP_SHARED && (p->vmas[v].prot & PROT_WRITE) != 0) {
+          filewrite(p->vmas[v].file, p->vmas[v].addr, p->vmas[v].len);
+      }
       
-    fileclose(p->vmas[v].file);
-    p->vmas[v].file = 0;
-    p->vmas[v].used = 0;
+      fileclose(p->vmas[v].file);
+      p->vmas[v].file = 0;
+      p->vmas[v].used = 0;
+    }
   }
 
   begin_op();
