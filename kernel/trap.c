@@ -3,6 +3,8 @@
 #include "memlayout.h"
 #include "riscv.h"
 #include "spinlock.h"
+#include "sleeplock.h"
+#include "file.h"
 #include "proc.h"
 #include "defs.h"
 
@@ -15,6 +17,53 @@ extern char trampoline[], uservec[], userret[];
 void kernelvec();
 
 extern int devintr();
+
+uint64 
+lazyalloc(struct proc *p, uint64 va)
+{
+  if(va >= p->sz || va < PGROUNDUP(p->trapframe->sp)){
+    return -1;
+  }
+  char *pa;
+  struct vma *pvma = 0;
+   
+  for (int i = 0; i < NOVMA; i++) {
+    if ((p->vmas[i].used == 1) && (va >= p->vmas[i].addr) && (va < p->vmas[i].addr + p->vmas[i].len)) {
+      pvma = &p->vmas[i];
+      break;
+    }
+  }
+
+  if (pvma == 0) {
+    return -1;
+  }
+
+  uint64 a = PGROUNDDOWN(pvma->addr);
+  uint64 last = PGROUNDDOWN(pvma->addr + pvma->len - 1);
+
+  for(;;){
+    pa = kalloc();
+    if(pa == 0){
+      return -1;
+    }
+    memset(pa, 0, PGSIZE);
+
+    if(mappages(p->pagetable, a, PGSIZE, (uint64)pa, pvma->prot|PTE_U) != 0){
+      kfree(pa);
+      return -1;
+    }  
+    
+    if(a == last)
+      break;
+    a += PGSIZE;
+  }
+
+  ilock(pvma->file->ip);
+  readi(pvma->file->ip, 1, pvma->addr, pvma->offset, pvma->len);
+  iunlock(pvma->file->ip);
+ 
+  return 0;
+}
 
 void
 trapinit(void)
