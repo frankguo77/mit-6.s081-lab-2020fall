@@ -142,14 +142,15 @@ e1000_recv(void)
   //
   // int rxhead = regs[E1000_RDH];
   int idx = 0;
-  for (int i = 0; i < RX_RING_SIZE; i++) {
+  // for (int i = 0; i < RX_RING_SIZE; i++) {
+  while (1) {
     idx = (regs[E1000_RDT] + 1)  % RX_RING_SIZE;
     // struct mbuf * m;
   
 
     if ((rx_ring[idx].status & E1000_RXD_STAT_DD) == 0) {
       // release(&e1000_lock);
-      continue;
+      return;
     }
     
     rx_mbufs[idx]->len = rx_ring[idx].length;
